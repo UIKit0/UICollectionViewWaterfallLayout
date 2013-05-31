@@ -12,6 +12,7 @@
 @property (nonatomic, assign) CGFloat interitemSpacing;
 @property (nonatomic, strong) NSMutableArray *columnHeights; // height for each column
 @property (nonatomic, strong) NSMutableArray *itemAttributes; // attributes for each item
+@property (nonatomic) CGFloat loadingHeight;
 @end
 
 @implementation UICollectionViewWaterfallLayout
@@ -46,6 +47,7 @@
 {
     _columnCount = 2;
     _itemWidth = 140.0f;
+    _loadingHeight = 50;
     _sectionInset = UIEdgeInsetsZero;
 }
 
@@ -105,14 +107,15 @@
 
 - (CGSize)collectionViewContentSize
 {
+    CGSize contentSize = self.collectionView.frame.size;
+
     if (self.itemCount == 0) {
-        return CGSizeZero;
+        return CGSizeMake(contentSize.width, self.loadingHeight);
     }
 
-    CGSize contentSize = self.collectionView.frame.size;
     NSUInteger columnIndex = [self longestColumnIndex];
     CGFloat height = [self.columnHeights[columnIndex] floatValue];
-    contentSize.height = height - self.interitemSpacing + self.sectionInset.bottom;
+    contentSize.height = height - self.interitemSpacing + self.sectionInset.bottom + self.loadingHeight;
     return contentSize;
 }
 
@@ -123,9 +126,26 @@
 
 - (NSArray *)layoutAttributesForElementsInRect:(CGRect)rect
 {
-    return [self.itemAttributes filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(UICollectionViewLayoutAttributes *evaluatedObject, NSDictionary *bindings) {
+    NSArray *attributes = [self.itemAttributes filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(UICollectionViewLayoutAttributes *evaluatedObject, NSDictionary *bindings) {
         return CGRectIntersectsRect(rect, [evaluatedObject frame]);
     }]];
+
+    UICollectionViewLayoutAttributes *attr = [self layoutAttributesForSupplementaryViewOfKind:@"LoadingCell" atIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
+
+    return [attributes arrayByAddingObject:attr];
+}
+
+- (UICollectionViewLayoutAttributes *)layoutAttributesForSupplementaryViewOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath {
+    UICollectionViewLayoutAttributes *attr =
+[UICollectionViewLayoutAttributes layoutAttributesForSupplementaryViewOfKind:kind withIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
+    attr.frame = (CGRect){
+        0,
+        self.collectionViewContentSize.height - self.loadingHeight,
+        self.collectionViewContentSize.width,
+        self.loadingHeight
+    };
+    
+    return attr;
 }
 
 - (BOOL)shouldInvalidateLayoutForBoundsChange:(CGRect)newBounds
