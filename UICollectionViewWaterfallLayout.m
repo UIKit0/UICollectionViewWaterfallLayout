@@ -90,18 +90,57 @@
     // Item will be put into shortest column.
     for (NSInteger idx = 0; idx < _itemCount; idx++) {
         NSIndexPath *indexPath = [NSIndexPath indexPathForItem:idx inSection:0];
-        CGFloat itemHeight = [self.delegate collectionView:self.collectionView
-                                                    layout:self
-                                  heightForItemAtIndexPath:indexPath];
-        NSUInteger columnIndex = [self shortestColumnIndex];
-        CGFloat xOffset = _sectionInset.left + (_itemWidth + _interitemSpacing) * columnIndex;
-        CGFloat yOffset = [(_columnHeights[columnIndex]) floatValue];
 
-        UICollectionViewLayoutAttributes *attributes =
-        [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:indexPath];
-        attributes.frame = CGRectMake(xOffset, yOffset, self.itemWidth, itemHeight);
-        [_itemAttributes addObject:attributes];
-        _columnHeights[columnIndex] = @(yOffset + itemHeight + _interitemSpacing);
+        CGFloat itemHeight;
+        CGFloat itemWidth;
+        if ([self.delegate respondsToSelector:@selector(collectionView:layout:sizeForItemAtIndexPath:)]) {
+            CGSize size = [self.delegate collectionView:self.collectionView
+                                                 layout:self
+                                 sizeForItemAtIndexPath:indexPath];
+            
+            itemHeight = size.height;
+            itemWidth  = size.width;
+        } else {
+            itemHeight = [self.delegate collectionView:self.collectionView
+                                                layout:self
+                              heightForItemAtIndexPath:indexPath];
+            itemWidth = self.itemWidth;
+        }
+
+        if (itemWidth == self.itemWidth) {
+
+            // Waterfall cell
+
+            NSUInteger columnIndex = [self shortestColumnIndex];
+            CGFloat xOffset = _sectionInset.left + (_itemWidth + _interitemSpacing) * columnIndex;
+            CGFloat yOffset = [(_columnHeights[columnIndex]) floatValue];
+
+            UICollectionViewLayoutAttributes *attributes =
+            [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:indexPath];
+            attributes.frame = CGRectMake(xOffset, yOffset, self.itemWidth, itemHeight);
+            [_itemAttributes addObject:attributes];
+            _columnHeights[columnIndex] = @(yOffset + itemHeight + _interitemSpacing);
+
+        } else {
+            
+            // Full width cell
+
+            NSUInteger columnIndex = [self longestColumnIndex];
+            itemWidth = MIN(itemWidth, self.collectionView.frame.size.width - _sectionInset.left - _sectionInset.right);
+            CGFloat xOffset = MAX(_sectionInset.left, roundf((self.collectionView.frame.size.width -itemWidth) / 2));
+            CGFloat yOffset = [(_columnHeights[columnIndex]) floatValue];
+            
+            UICollectionViewLayoutAttributes *attributes =
+            [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:indexPath];
+            attributes.frame = CGRectMake(xOffset, yOffset, itemWidth, itemHeight);
+            [_itemAttributes addObject:attributes];
+
+            CGFloat newYOffset = yOffset + itemHeight + _interitemSpacing;
+            for (int i = 0; i < [_columnHeights count]; i++) {
+                [_columnHeights replaceObjectAtIndex:i withObject:@(newYOffset)];
+            }
+
+        }
     }
 }
 

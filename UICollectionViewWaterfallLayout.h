@@ -9,9 +9,19 @@
 
 @class UICollectionViewWaterfallLayout;
 @protocol UICollectionViewDelegateWaterfallLayout <UICollectionViewDelegate>
+
+@optional
+
 - (CGFloat)collectionView:(UICollectionView *)collectionView
                    layout:(UICollectionViewWaterfallLayout *)collectionViewLayout
  heightForItemAtIndexPath:(NSIndexPath *)indexPath;
+
+
+// Return (CGSize){CGFLOAT_MAX, <height>} to results in a full width cell
+- (CGSize)collectionView:(UICollectionView *)collectionView
+                  layout:(UICollectionViewLayout*)collectionViewLayout
+  sizeForItemAtIndexPath:(NSIndexPath *)indexPath;
+
 @end
 
 @interface UICollectionViewWaterfallLayout : UICollectionViewLayout
